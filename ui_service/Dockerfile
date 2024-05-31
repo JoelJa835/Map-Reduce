@@ -1,4 +1,4 @@
-FROM python:3.7.15-slim
+FROM python:3.11.2-slim
 
 
 WORKDIR /ui_service
@@ -7,8 +7,8 @@ WORKDIR /ui_service
 COPY . .
 
 
-RUN pip install -r src/requirements.txt
+RUN pip install --no-cache-dir -r src/requirements.txt
 
 
-ENTRYPOINT [ "python", "src/cli.py" ]
+ENTRYPOINT [ "python", "src/app.py" ]
 

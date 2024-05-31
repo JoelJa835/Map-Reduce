@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui-deployment
+  labels:
+    app: ui_service
+spec:
+  replicas: 3 
+  selector:
+    matchLabels:
+      app: ui_service
+  template:
+    metadata:
+      labels:
+        app: ui_service
+    spec:
+      containers:
+      - name: ui-service-container
+        image: gsiatras13/map-reduce-ui-service:latest
+        ports:
+        - containerPort: 80
