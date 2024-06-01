@@ -3,19 +3,19 @@ kind: Deployment
 metadata:
   name: ui-deployment
   labels:
-    app: ui_service
+    app: ui-service
 spec:
   replicas: 3 
   selector:
     matchLabels:
-      app: ui_service
+      app: ui-service
   template:
     metadata:
       labels:
-        app: ui_service
+        app: ui-service
     spec:
       containers:
       - name: ui-service-container
-        image: gsiatras13/map-reduce-ui-service:latest
+        image: gsiatras13/map-reduce-ui:latest
         ports:
-        - containerPort: 80
+        - containerPort: 8080

@@ -9,6 +9,7 @@ COPY . .
 
 RUN pip install --no-cache-dir -r src/requirements.txt
 
+EXPOSE 8080
 
 ENTRYPOINT [ "python", "src/app.py" ]
 
