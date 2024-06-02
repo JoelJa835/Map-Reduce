@@ -1,4 +1,4 @@
-# Map-Reduce
+# Map-Reduce on Kubernetes for fun! 
 Implementation of Map-Reduce on Kubernetes
 
 # UML
