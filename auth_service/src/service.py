@@ -55,18 +55,6 @@ async def get_current_user(db: Session, token: str = Depends(oauth2_scheme)):
     except JWTError:
         return None
 
-# #create user
-# async def create_user(db: Session, user: UserCreate):
-#     db_user = UserModel(
-#         username=user.username,
-#         email=user.email,
-#         hashed_password=bcrypt_context.hash(user.password),
-#         role=user.role
-#     )
-#     db.add(db_user)
-#     db.commit()
-#     return db_user
-
 
 # Create user
 async def create_user(db: Session, user: UserCreate, admin: bool = False):
@@ -93,13 +81,3 @@ async def authenticate_user(db: Session, username: str, password: str):
 # Check if the current user is an admin
 async def is_admin(user: UserModel):
     return user.role == UserRole.admin
-
-
-# #delete user by id
-# async def delete_user(db: Session, id: int):
-#     db_user = db.query(UserModel).filter(UserModel.id == id).first()
-#     if db_user:
-#         db.delete(db_user)
-#         db.commit()
-#         return True
-#     return False
