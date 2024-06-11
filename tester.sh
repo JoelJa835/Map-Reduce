@@ -12,9 +12,9 @@ docker run -d --name map-reduce-auth-service -p 8000:8000 map-reduce-auth-servic
 docker run -t --name map-reduce-auth -p 8000:8000 map-reduce-auth
 
 
-
+# Auth
 # sing a user in:
-gsiatras@192 Map-Reduce % curl -X 'POST' \
+curl -X 'POST' \
   'http://localhost:8000/signup' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImlkIjoxLCJleHAiOjE3MTgxMjUyOTZ9.A52H8Mor2LvBujm93wFPZ-Ty8WGPky3BLMz8RYlyysg' \
@@ -33,3 +33,38 @@ curl -X 'POST' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'grant_type=password&username=user1&password=password&scope=&client_id=string&client_secret=string'
+
+
+
+# UI
+# submit a job
+curl -X POST http://localhost:8080/jobs/submit \
+-H "Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImlkIjoxLCJleHAiOjE3MTgyMDc2MDF9.kfmhhD6iaABBYeHDYQIV-xORjvgUHUEvS_-vyiGFFSk" \
+-H "Content-Type: application/json" \
+-d '{
+  "mapper_func": "function mapper(key, value) { return key + value; }",
+  "reducer_func": "function reducer(key, values) { return values.reduce((a, b) => a + b, 0); }",
+  "input_data": {"key1": "value1", "key2": "value2"}
+}'
+
+
+# Get job status
+curl -X GET http://localhost:8080/jobs/status/1 \
+-H "Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImlkIjoxLCJleHAiOjE3MTgyMDc2MDF9.kfmhhD6iaABBYeHDYQIV-xORjvgUHUEvS_-vyiGFFSk"
+
+
+# login
+curl -X POST http://localhost:8080/login \
+-H "Content-Type: application/json" \
+-d '{"username": "admin", "password": "admin"}'   
+
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImlkIjoxLCJleHAiOjE3MTgyMDg1OTl9.-_ieELVCUHJvWdwOs0I4DqjKDNTnXN8SqFQepgPifB0",
+  "token_type": "bearer"
+}
+
+# Sign in a user
+curl -X POST http://localhost:8080/admin/create_user \
+-H "Content-Type: application/json" \
+-H "Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImlkIjoxLCJleHAiOjE3MTgyMDg1OTl9.-_ieELVCUHJvWdwOs0I4DqjKDNTnXN8SqFQepgPifB0" \
+-d '{"username": "user1", "password": "password123", "email": "user1@example.com"}'

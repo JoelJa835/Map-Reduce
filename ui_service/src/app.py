@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 import requests
 import os
+from typing import Optional
+
 
 app = Flask(__name__)
 
@@ -15,10 +17,18 @@ AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://auth-service:8000")
 # Dummy data for storing job status
 job_status = {}
 
-def validate_token(token):
-    # Validate the token with the auth service
-    response = requests.get(f"{AUTH_SERVICE_URL}/validate-token", headers={"Authorization": f"Bearer {token}"})
-    return response.status_code == 200
+def validate_token(token: str) -> Optional[dict]:
+    try:
+        response = requests.get(
+            f"{AUTH_SERVICE_URL}/user-role",
+            params={"token": token}
+        )
+        response.raise_for_status()
+        user_role = response.json()  # Assuming the response is a JSON string with the role
+        return {"role": user_role}
+    except requests.RequestException as e:
+        print(f"Token validation failed: {e}")
+        return None
 
 
 # Jobs logic
@@ -28,8 +38,9 @@ def submit_job():
     if not token:
         return jsonify({"error": "Authorization token is missing"}), 401
 
-    if not validate_token(token):
-        return jsonify({"error": "Invalid or expired token"}), 401
+    user_info = validate_token(token)
+    if not user_info or user_info.get("role") not in ["admin", "user"]:
+        return jsonify({"error": "Invalid or expired token or user not authorized"}), 401
 
     data = request.json
     mapper_func = data.get('mapper_func', '')
@@ -43,14 +54,16 @@ def submit_job():
     return jsonify({"message": "Job submitted successfully", "job_id": job_id})
 
 
+
 @app.route('/jobs/status/<int:job_id>', methods=['GET'])
 def get_job_status(job_id):
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({"error": "Authorization token is missing"}), 401
 
-    if not validate_token(token):
-        return jsonify({"error": "Invalid or expired token"}), 401
+    user_info = validate_token(token)
+    if not user_info or user_info.get("role") not in ["admin", "user"]:
+        return jsonify({"error": "Invalid or expired token or user not authorized"}), 401
 
     if job_id in job_status:
         return jsonify({"job_id": job_id, "status": job_status[job_id]})

@@ -67,10 +67,5 @@ async def get_user_role(db: Session = Depends(get_db), token: str = Query(...)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found or invalid token")
     return current_user.role.value
 
-@app.get("/user-role", response_model=str)
-async def get_user_role(db: Session = Depends(get_db), token: str = Query(...)):
-    current_user = await service.get_current_user(db, token)
-    if current_user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found or invalid token")
-    return current_user.role.value
+
 

@@ -2,7 +2,7 @@
 SERVICE_NAME := ui-service
 UI_DEPLOYMENT_FILE := kubernetes/deployments/ui-service-deployment.yaml
 UI_SERVICE_FILE := kubernetes/services/ui-service.yaml
-AUTH_DEPLOYMENT_FILE := kubernetes/deployment/auth-statefulset.yaml
+AUTH_DEPLOYMENT_FILE := kubernetes/deployments/auth-service-statefull-set.yaml
 AUTH_SERVICE_FILE := kubernetes/services/auth-service.yaml
 
 
