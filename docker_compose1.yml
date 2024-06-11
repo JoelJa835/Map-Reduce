@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  ui-service:
+    build:
+      context: ./ui_service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"  # Map Flask app port
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8000  # Set environment variable for Flask app
+    depends_on:
+      - auth-service  # Wait for auth-service to be ready before starting Flask app
+
+  auth-service:
+    build:
+      context: ./auth_service  # Path to authentication service code
+      dockerfile: Dockerfile  # Dockerfile for authentication service
+    ports:
+      - "8000:8000"  # Map authentication service port

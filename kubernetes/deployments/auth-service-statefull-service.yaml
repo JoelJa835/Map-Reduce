@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: auth-service
+spec:
+  replicas: 1
+  serviceName: "auth-service"
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+      - name: auth-service
+        image: gsiatras/map-reduce-auth:latest  # Replace with your Docker Hub username and image name
+        ports:
+        - containerPort: 8000
+  volumeClaimTemplates:
+  - metadata:
+      name: auth-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi  # Adjust storage size as needed

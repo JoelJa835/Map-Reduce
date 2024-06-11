@@ -1,4 +1,6 @@
 from flask import Flask, request, jsonify
+import requests
+import os
 
 app = Flask(__name__)
 
@@ -7,15 +9,28 @@ app = Flask(__name__)
 Api that works as an User interface
 '''
 
+
+AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://auth-service:8000")
+
 # Dummy data for storing job status
 job_status = {}
 
-# Dummy data for storing users
-users = {}
+def validate_token(token):
+    # Validate the token with the auth service
+    response = requests.get(f"{AUTH_SERVICE_URL}/validate-token", headers={"Authorization": f"Bearer {token}"})
+    return response.status_code == 200
+
 
 # Jobs logic
 @app.route('/jobs/submit', methods=['POST'])
 def submit_job():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"error": "Authorization token is missing"}), 401
+
+    if not validate_token(token):
+        return jsonify({"error": "Invalid or expired token"}), 401
+
     data = request.json
     mapper_func = data.get('mapper_func', '')
     reducer_func = data.get('reducer_func', '')
@@ -30,6 +45,13 @@ def submit_job():
 
 @app.route('/jobs/status/<int:job_id>', methods=['GET'])
 def get_job_status(job_id):
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"error": "Authorization token is missing"}), 401
+
+    if not validate_token(token):
+        return jsonify({"error": "Invalid or expired token"}), 401
+
     if job_id in job_status:
         return jsonify({"job_id": job_id, "status": job_status[job_id]})
     else:
@@ -43,23 +65,37 @@ def create_user():
     data = request.json
     username = data.get('username', '')
     password = data.get('password', '')
+    email = data.get('email', '')
 
-    if username and password:
-        # Placeholder for actual user creation logic
-        users[username] = {'password': password}
-        return jsonify({"message": f"User '{username}' created successfully"})
-    else:
-        return jsonify({"error": "Username and password are required"}), 400
-    
+    if username and password and email:
+        # Prepare the payload for the FastAPI request
+        payload = {
+            "username": username,
+            "password": password,
+            "email": email
+        }
 
-@app.route('/admin/delete_user/<username>', methods=['DELETE'])
-def delete_user(username):
-    if username in users:
-        # Placeholder for actual user deletion logic
-        del users[username]
-        return jsonify({"message": f"User '{username}' deleted successfully"})
+        # Send a request to the FastAPI auth service
+        headers = {
+            'Authorization': f'Bearer {request.headers.get("Authorization")}'  # Forward the token
+        }
+        response = requests.post(AUTH_SERVICE_URL + "/signup", json=payload, headers=headers)
+
+        if response.status_code == 201:
+            return jsonify(response.json())
+        else:
+            return jsonify(response.json()), response.status_code
     else:
-        return jsonify({"error": f"User '{username}' not found"}), 404
+        return jsonify({"error": "Username, password, and email are required"}), 400
+
+# @app.route('/admin/delete_user/<username>', methods=['DELETE'])
+# def delete_user(username):
+#     if username in users:
+#         # Placeholder for actual user deletion logic
+#         del users[username]
+#         return jsonify({"message": f"User '{username}' deleted successfully"})
+#     else:
+#         return jsonify({"error": f"User '{username}' not found"}), 404
 
 
 
@@ -70,11 +106,16 @@ def login():
     username = data.get('username', '')
     password = data.get('password', '')
 
-    if username in users and users[username]['password'] == password:
-        return jsonify({"message": "Login successful"})
+    print(AUTH_SERVICE_URL)
+    # Send a request to the auth service
+    response = requests.post(AUTH_SERVICE_URL + "/token", data={'username': username, 'password': password})
+    
+    if response.status_code == 200:
+        return jsonify(response.json())
     else:
         return jsonify({"error": "Invalid username or password"}), 401
     
-    
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
