@@ -4,3 +4,4 @@ ui_service/.DS_Store
 .DS_Store
 ui_service/src/.DS_Store
 auth_service/src/__pycache__
+token.txt

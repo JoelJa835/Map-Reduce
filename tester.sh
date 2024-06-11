@@ -58,13 +58,19 @@ curl -X POST http://localhost:8080/login \
 -H "Content-Type: application/json" \
 -d '{"username": "admin", "password": "admin"}'   
 
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImlkIjoxLCJleHAiOjE3MTgyMDg1OTl9.-_ieELVCUHJvWdwOs0I4DqjKDNTnXN8SqFQepgPifB0",
-  "token_type": "bearer"
-}
 
 # Sign in a user
 curl -X POST http://localhost:8080/admin/create_user \
 -H "Content-Type: application/json" \
 -H "Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImlkIjoxLCJleHAiOjE3MTgyMDg1OTl9.-_ieELVCUHJvWdwOs0I4DqjKDNTnXN8SqFQepgPifB0" \
 -d '{"username": "user1", "password": "password123", "email": "user1@example.com"}'
+
+
+
+# CLIENT
+
+# login 
+python3 client.py login --username admin --password admin
+
+# add a user
+python3 client.py admin create-user user2
