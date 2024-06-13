@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: auth-service
-        image: gsiatras13/map-reduce-auth:latest  # Replace with your Docker Hub username and image name
+        image: gsiatras13/map-reduce-auth-linux:latest  # Replace with your Docker Hub username and image name
         ports:
         - containerPort: 8000
   volumeClaimTemplates:
