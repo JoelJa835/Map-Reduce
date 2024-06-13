@@ -49,7 +49,7 @@ curl -X POST http://localhost:8080/jobs/submit \
 
 
 # Get job status
-curl -X GET http://localhost:8080/jobs/status/1 \
+curl -X GET http://10.5.0.3:8080/jobs/status/1 \
 -H "Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImlkIjoxLCJleHAiOjE3MTgyMDc2MDF9.kfmhhD6iaABBYeHDYQIV-xORjvgUHUEvS_-vyiGFFSk"
 
 
