@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: auth-service
+  namespace: dena
 spec:
   replicas: 1
   serviceName: "auth-service"

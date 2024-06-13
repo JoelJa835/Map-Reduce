@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ui-deployment
+  namespace: dena
   labels:
     app: ui-service
 spec:
