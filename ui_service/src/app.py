@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 import requests
 import os
 from typing import Optional
+from cassandra.cluster import Cluster
+from cassandra.query import SimpleStatement
 
 
 app = Flask(__name__)
@@ -11,7 +13,12 @@ app = Flask(__name__)
 Api that works as an User interface
 '''
 
+# Get the contact points from environment variables
+contact_points = os.environ.get('CASSANDRA_CONTACT_POINTS', 'cassandra-0.cassandra.default.svc.cluster.local').split(',')
 
+# Connect to the cluster
+cluster = Cluster(contact_points)
+session = cluster.connect('your_keyspace')
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://auth-service:8000")
 
 # Dummy data for storing job status

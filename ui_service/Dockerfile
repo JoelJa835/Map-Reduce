@@ -1,4 +1,4 @@
-FROM python:3.11.2-slim
+FROM python:3.11.2 as build
 
 ENV AUTH_SERVICE_URL="http://auth-service:8000"
 
