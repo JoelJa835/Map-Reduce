@@ -9,14 +9,8 @@ spec:
   volumeMode: Filesystem
   accessModes:
     - ReadWriteOnce
-  storageClassName: cassandra  # Ensure this matches your StorageClass
-  persistentVolumeReclaimPolicy: Delete  # Adjust as per your retention policy
-  claimRef:
-    namespace: dena
-    name: cassandra-data  # Replace with your PVC name
-  mountOptions:
-    - hard
-    - nfsvers=4.1
-  nfs:
-    path: /tmp
-    server: 172.17.0.2 
+  storageClassName: cassandra
+  persistentVolumeReclaimPolicy: Delete
+  hostPath:
+    path: /mnt/data/cassandra  # Adjust this path as needed on your host machine
+
