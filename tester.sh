@@ -74,3 +74,14 @@ python3 client.py login --username admin --password admin
 
 # add a user
 python3 client.py admin create-user user2
+
+
+kubectl create -f minio-storage-class.yaml
+kubectl create -f minio-pv.yaml
+kubectl create -f minio-pvc.yaml
+kubectl create -f minio-deployment.yaml
+
+kubectl delete -f minio-deployment.yaml
+kubectl delete -f minio-pvc.yaml
+kubectl delete -f minio-pv.yaml
+kubectl delete -f minio-storage-class.yaml
