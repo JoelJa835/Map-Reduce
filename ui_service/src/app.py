@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 import requests
 import os
 from typing import Optional
+from minio_utils import create_minio_bucket, check_file_existence
+
 # from cassandra.cluster import Cluster
 # from cassandra.query import SimpleStatement
 
@@ -52,13 +54,20 @@ def submit_job():
     data = request.json
     mapper_func = data.get('mapper_func', '')
     reducer_func = data.get('reducer_func', '')
-    input_data = data.get('input_data', {})
+    input_file = data.get('input_file', '')
+
+    if not input_file: 
+        return jsonify({"error": f"No input file provided"}), 404
+    # Check if input file exists in Minio bucket
+    if input_file and not check_file_existence(input_file):
+        return jsonify({"error": f"File '{input_file}' not found in Minio bucket"}), 404
 
     # Placeholder for actual job submission logic
     job_id = len(job_status) + 1
     job_status[job_id] = 'submitted'
 
     return jsonify({"message": "Job submitted successfully", "job_id": job_id})
+
 
 
 
@@ -137,5 +146,20 @@ def login():
     
 
 
+# Helpher to check minio is running
+MINIO_ENDPOINT = "http://minio-service:9000"
+
+# Example endpoint to test MinIO connection
+@app.route('/minio/health/live', methods=['GET'])
+def check_minio_health():
+    try:
+        response = requests.get(f"{MINIO_ENDPOINT}/minio/health/live")
+        response.raise_for_status()
+        return jsonify({"status": "MinIO is healthy"})
+    except requests.RequestException as e:
+        return jsonify({"error": f"Failed to connect to MinIO: {e}"}), 500
+
+        
 if __name__ == '__main__':
+    create_minio_bucket()
     app.run(host='0.0.0.0', port=8080, debug=True)

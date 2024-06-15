@@ -68,7 +68,7 @@ curl -X POST http://localhost:8080/admin/create_user \
 
 
 # CLIENT
-
+kubectl port-forward service/ui-service 8080:8080 -n dena
 # login 
 python3 client.py login --username admin --password admin
 

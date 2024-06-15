@@ -37,39 +37,34 @@ def jobs():
     pass
 
 @jobs.command()
-@click.argument('mapper_func', type=click.File('r'))
-@click.argument('reducer_func', type=click.File('r'))
-@click.argument('input_file', type=click.File('r'))
-def submit(mapper_func, reducer_func, input_file):
+@click.argument('input_name', type=str)
+def submit(input_name):
     """Submit a new job."""
-    token = get_token()
+    token = get_token()  # Implement your token retrieval logic here
     if not token:
         click.echo("You are not logged in.")
         return
-    # Read the contents of the mapper function
-    mapper_code = mapper_func.read()
 
-    # Read the contents of the reducer function
-    reducer_code = reducer_func.read()
+    # Placeholder for other inputs (mapper_func, reducer_func)
+    mapper_code = ''
+    reducer_code = ''
 
-    # Read the contents of the input file (assumed to be JSON)
-    input_data = json.load(input_file)
-
-    # Prepare request payload
+    # Prepare payload
     payload = {
         "mapper_func": mapper_code,
         "reducer_func": reducer_code,
-        "input_data": input_data
+        "input_file": input_name  # Assuming input_name is the name of the file to be submitted
     }
 
     # Make HTTP POST request to submit job
-    response = requests.post(SERVICE_URL, json=payload, headers={"Authorization": token})
+    headers = {"Authorization": token, "Content-Type": "application/json"}
+    response = requests.post(f"{SERVICE_URL}/jobs/submit", json=payload, headers=headers)
 
     if response.status_code == 200:
         click.echo("Job submitted successfully.")
         click.echo(response.json())
     else:
-        click.echo("Failed to submit job.")
+        click.echo(f"Failed to submit job. Status code: {response.status_code}")
         click.echo(response.text)
 
 
