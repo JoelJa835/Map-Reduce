@@ -85,3 +85,8 @@ kubectl delete -f minio-deployment.yaml
 kubectl delete -f minio-pvc.yaml
 kubectl delete -f minio-pv.yaml
 kubectl delete -f minio-storage-class.yaml
+
+
+
+#fix for kubernetes storages
+kubectl patch pv cassandra-data-pv-1 -p '{"metadata":{"finalizers":null}}'

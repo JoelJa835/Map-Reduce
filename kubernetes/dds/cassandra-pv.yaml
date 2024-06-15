@@ -14,3 +14,4 @@ spec:
   hostPath:
     path: /mnt/data/cassandra  # Adjust this path as needed on your host machine
 
+
