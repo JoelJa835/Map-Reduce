@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-service
+  namespace: dena
+spec:
+  selector:
+    app: minio  # Match the labels used in your Minio Deployment
+  ports:
+    - name: backend
+      protocol: TCP
+      port: 9000  # Port on the service for Minio backend
+      targetPort: 9000  # Port your Minio container is listening on
+      nodePort: 30000  # Port on the node (adjust as needed)
+    - name: ui
+      protocol: TCP
+      port: 9001  # Port on the service for Minio UI
+      targetPort: 9001  # Port your Minio container UI is listening on
+      nodePort: 30001  # Port on the node (adjust as needed)
+  type: NodePort  # Expose the service on a static port on each node
+

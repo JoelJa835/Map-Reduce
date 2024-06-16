@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui-deployment
+  namespace: dena
+  labels:
+    app: ui-service
+spec:
+  replicas: 3 
+  selector:
+    matchLabels:
+      app: ui-service
+  template:
+    metadata:
+      labels:
+        app: ui-service
+    spec:
+      containers:
+      - name: ui-service-container
+        image: gsiatras13/map-reduce-ui-linux:minio
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
