@@ -42,8 +42,7 @@ clean:
 	kubectl delete -f $(AUTH_SERVICE_FILE)
 	kubectl delete -f $(CASSANDRA_DEPLOYMENT_FILE)
 	kubectl delete -f $(CASSANDRA_SERVICE_FILE)
-	# kubectl patch pv cassandra-data-pv-1 -p '{"metadata":{"finalizers":null}}'
-	kubectl delete -f $(CASSANDRA_STORAGE_FILE)
+	# kubectl delete -f $(CASSANDRA_STORAGE_FILE)
 	kubectl delete -f $(MINIO_DEPLOYMENT_FILE)
 	kubectl delete -f $(MINIO_PVC_FILE)
 	kubectl delete -f $(MINIO_PV_FILE)
