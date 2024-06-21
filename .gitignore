@@ -6,3 +6,5 @@ ui_service/src/.DS_Store
 auth_service/src/__pycache__
 token.txt
 docker-token.txt
+word_stats.json
+large_input.json
