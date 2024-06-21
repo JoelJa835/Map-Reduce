@@ -3,6 +3,8 @@ import requests
 import os
 from typing import Optional
 from minio_utils import create_minio_bucket, check_file_existence
+from cassandra.cluster import Cluster
+from cassandra.auth import PlainTextAuthProvider
 
 # from cassandra.cluster import Cluster
 # from cassandra.query import SimpleStatement
@@ -11,6 +13,13 @@ from minio_utils import create_minio_bucket, check_file_existence
 app = Flask(__name__)
 
 
+# Cassandra connection setup
+contact_points = ['cassandra-service.cassandra-service.dena.svc.cluster.local']  # Replace with your Cassandra service DNS
+auth_provider = PlainTextAuthProvider(username='your_username', password='your_password')
+keyspace = 'your_keyspace'  # Replace with your keyspace name
+
+cluster = Cluster(contact_points=contact_points, auth_provider=auth_provider)
+session = cluster.connect(keyspace)
 '''
 Api that works as an User interface
 '''
@@ -40,6 +49,15 @@ def validate_token(token: str) -> Optional[dict]:
         return None
 
 
+def submit_job_to_cassandra(job_id, mapper_func, reducer_func, input_file):
+    insert_query = """
+        INSERT INTO jobs (job_id, mapper_func, reducer_func, input_file, status)
+        VALUES (?, ?, ?, ?, ?)
+    """
+    status = 'submitted'  # Initial status
+    session.execute(insert_query, (job_id, mapper_func, reducer_func, input_file, status))
+
+
 # Jobs logic
 @app.route('/jobs/submit', methods=['POST'])
 def submit_job():
@@ -66,7 +84,12 @@ def submit_job():
     job_id = len(job_status) + 1
     job_status[job_id] = 'submitted'
 
-    return jsonify({"message": "Job submitted successfully", "job_id": job_id})
+    # Submit job details to Cassandra
+    try:
+        submit_job_to_cassandra(job_id, mapper_func, reducer_func, input_file)
+        return jsonify({"message": "Job submitted successfully", "job_id": job_id}), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to submit job to Cassandra: {str(e)}"}), 500
 
 
 

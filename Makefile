@@ -5,10 +5,9 @@ UI_SERVICE_FILE := kubernetes/services/ui-service.yaml
 AUTH_DEPLOYMENT_FILE := kubernetes/deployments/auth-service-statefull-set.yaml
 AUTH_SERVICE_FILE := kubernetes/services/auth-service.yaml
 
-CASSANDRA_DEPLOYMENT_FILE := kubernetes/dds/cassandra.yaml
-CASSANDRA_SERVICE_FILE := kubernetes/services/cassandra-service.yaml
-CASSANDRA_PV_FILE := kubernetes/dds/cassandra-pv.yaml
-CASSANDRA_STORAGE_FILE := kubernetes/dds/cassandra-storage.yaml
+CASSANDRA_DEPLOYMENT_FILE := kubernetes/dds/cassandra-statefulset.yaml
+CASSANDRA_SERVICE_FILE := kubernetes/dds/cassandra-service.yaml
+CASSANDRA_STORAGE_FILE := kubernetes/dds/local-volumes.yaml
 
 MINIO_STORAGE_FILE := kubernetes/storage/minio-storage-class.yaml
 MINIO_PVC_FILE := kubernetes/storage/minio-pvc.yaml
@@ -24,10 +23,9 @@ deploy:
 	kubectl create -f $(UI_SERVICE_FILE)
 	kubectl create -f $(AUTH_DEPLOYMENT_FILE)
 	kubectl create -f $(AUTH_SERVICE_FILE)
-#	kubectl create -f $(CASSANDRA_STORAGE_FILE)
-#	kubectl create -f $(CASSANDRA_PV_FILE)
-	kubectl create -f $(CASSANDRA_DEPLOYMENT_FILE)
 	kubectl create -f $(CASSANDRA_SERVICE_FILE)
+	# kubectl create -f $(CASSANDRA_STORAGE_FILE)
+	kubectl create -f $(CASSANDRA_DEPLOYMENT_FILE)
 	kubectl create -f $(MINIO_STORAGE_FILE)
 	kubectl create -f $(MINIO_PV_FILE)
 	kubectl create -f $(MINIO_PVC_FILE)
@@ -44,8 +42,8 @@ clean:
 	kubectl delete -f $(AUTH_SERVICE_FILE)
 	kubectl delete -f $(CASSANDRA_DEPLOYMENT_FILE)
 	kubectl delete -f $(CASSANDRA_SERVICE_FILE)
-#	kubectl delete -f $(CASSANDRA_PV_FILE)
-#	kubectl delete -f $(CASSANDRA_STORAGE_FILE)
+	# kubectl patch pv cassandra-data-pv-1 -p '{"metadata":{"finalizers":null}}'
+	kubectl delete -f $(CASSANDRA_STORAGE_FILE)
 	kubectl delete -f $(MINIO_DEPLOYMENT_FILE)
 	kubectl delete -f $(MINIO_PVC_FILE)
 	kubectl delete -f $(MINIO_PV_FILE)
