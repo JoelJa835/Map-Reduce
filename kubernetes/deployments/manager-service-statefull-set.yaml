@@ -16,7 +16,8 @@ spec:
     spec:
       containers:
       - name: manager-service
-        image: gsiatras13/map-reduce-manager-service:latest  # Replace with your Docker Hub username and image name
+        image: gsiatras13/map-reduce-manager-service:worker  
+        imagePullPolicy: Always
         ports:
         - containerPort: 8081
   volumeClaimTemplates:
