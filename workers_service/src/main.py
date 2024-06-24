@@ -1,9 +1,9 @@
-# worker_service.py
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
 from cassandra.cluster import Cluster
-from cassandra.query import SimpleStatement
+from cassandra.query import BatchStatement, SimpleStatement
 import uuid
+import json 
 import collections
 
 app = FastAPI()
@@ -26,26 +26,27 @@ session.execute(f"""
 CREATE KEYSPACE IF NOT EXISTS {CASSANDRA_KEYSPACE}
 WITH REPLICATION = {{ 'class' : 'SimpleStrategy', 'replication_factor' : 1 }};
 """)
+# Table for intermediate results (Mapper results)
 session.execute(f"""
 CREATE TABLE IF NOT EXISTS {CASSANDRA_KEYSPACE}.{CASSANDRA_TABLE} (
-    job_id uuid,
-    key text,
-    value text,
-    PRIMARY KEY (job_id, key, value)
+    job_id UUID,
+    key TEXT,
+    value TEXT,
+    unique_id UUID,
+    PRIMARY KEY (job_id, key, unique_id)
 );
 """)
+
+
+# Table for Reducer results
 session.execute(f"""
 CREATE TABLE IF NOT EXISTS {CASSANDRA_KEYSPACE}.{FINAL_RESULT_TABLE} (
     job_id uuid,
     key text,
-    reduced_value text,
+    reduced_value int,
     PRIMARY KEY (job_id, key)
 );
 """)
-
-class MapRequest(BaseModel):
-    job_id: uuid.UUID
-    data: list
 
 class ShuffleSortRequest(BaseModel):
     job_id: uuid.UUID
@@ -53,51 +54,69 @@ class ShuffleSortRequest(BaseModel):
 class ReduceRequest(BaseModel):
     job_id: uuid.UUID
     key: str
-    values: list
 
 @app.post("/map/")
-async def map_data(map_request: MapRequest):
-    job_id = map_request.job_id
-    data = map_request.data
-
-    for item in data:
-        for key, value in item.items():
-            session.execute(
-                f"INSERT INTO {CASSANDRA_KEYSPACE}.{CASSANDRA_TABLE} (job_id, key, value) VALUES (%s, %s, %s)",
-                (job_id, key, value)
-            )
-
+async def map_data(job_id: uuid.UUID, file: UploadFile = File(...)):
+    contents = await file.read()
+    data = json.loads(contents.decode('utf-8'))
+    
+    batch = BatchStatement()
+    
+    for entry in data:
+        text = entry.get("text", "")
+        words = text.split()
+        for word in words:
+            normalized_word = word.strip().lower()
+            unique_id = uuid.uuid4()  # Ensure uniqueness for each word entry
+            batch.add(SimpleStatement(
+                f"INSERT INTO {CASSANDRA_KEYSPACE}.{CASSANDRA_TABLE} (job_id, key, value, unique_id) VALUES (%s, %s, %s, %s)"
+            ), (job_id, normalized_word, '1', unique_id))
+    
+    session.execute(batch)
+    
     return {"status": "success", "message": "Data mapped and stored in Cassandra"}
 
 @app.post("/shuffle-sort/")
 async def shuffle_sort(shuffle_sort_request: ShuffleSortRequest):
     job_id = shuffle_sort_request.job_id
 
-    # Retrieve and sort data
+    # Logging the received job_id for debugging
+    print(f"Received job_id: {job_id}")
+
+    # Retrieve data grouped by key
     query = SimpleStatement(
         f"SELECT key, value FROM {CASSANDRA_KEYSPACE}.{CASSANDRA_TABLE} WHERE job_id=%s"
     )
     result = session.execute(query, (job_id,))
 
-    sorted_data = collections.defaultdict(list)
+    grouped_data = collections.defaultdict(list)
     for row in result:
-        sorted_data[row.key].append(row.value)
+        grouped_data[row.key].append(int(row.value))
 
-    return {"status": "success", "sorted_data": sorted_data}
+    # Convert defaultdict to a regular dictionary for JSON serialization
+    grouped_data = dict(grouped_data)
+
+    return {"status": "success", "grouped_data": grouped_data}
 
 
 @app.post("/reduce/")
 async def reduce_data(reduce_request: ReduceRequest):
     job_id = reduce_request.job_id
-    key = reduce_request.key
-    values = reduce_request.values
+    grouped_data = reduce_request.grouped_data
 
-    # Example reduce operation (concatenate values)
-    reduced_value = ",".join(values)
+    # Sum the values for each key
+    reduced_data = {}
+    for key, values in grouped_data.items():
+        total_count = sum(values)
+        reduced_data[key] = total_count
+        
+        # Insert reduced value into final results table
+        session.execute(
+            f"INSERT INTO {CASSANDRA_KEYSPACE}.{FINAL_RESULT_TABLE} (job_id, key, reduced_value) VALUES (%s, %s, %s)",
+            (job_id, key, total_count)
+        )
 
-    session.execute(
-        f"INSERT INTO {CASSANDRA_KEYSPACE}.{FINAL_RESULT_TABLE} (job_id, key, reduced_value) VALUES (%s, %s, %s)",
-        (job_id, key, reduced_value)
-    )
+    return {"status": "success", "reduced_data": reduced_data}
 
-    return {"status": "success", "message": "Data reduced and stored in Cassandra"}
+
+
