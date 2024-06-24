@@ -90,3 +90,13 @@ kubectl delete -f minio-storage-class.yaml
 
 #fix for kubernetes storages
 kubectl patch pv cassandra-data-pv-1 -p '{"metadata":{"finalizers":null}}'
+
+kubectl rollout restart deployment ui-deployment -n dena
+
+kubectl rollout restart statefulset manager-service -n dena
+
+kubectl exec -it cassandra-0 -n dena -- /bin/bash
+
+cqlsh
+
+kubectl delete pods --field-selector=status.phase==Succeeded -n dena

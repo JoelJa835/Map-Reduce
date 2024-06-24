@@ -83,7 +83,9 @@ def status(job_id):
         response = requests.get(f"{SERVICE_URL}/jobs/status/{job_id}", headers=headers)
         if response.status_code == 200:
             job_status = response.json()
-            click.echo(f"Job ID: {job_status['job_id']}, Status: {job_status['status']}")
+            sub_status = job_status.get('sub_status', 'N/A')
+            number_of_chunks = job_status.get('number_of_chunks', 'N/A')
+            click.echo(f"Job ID: {job_status['job_id']}, Status: {job_status['status']}, Substatus: {sub_status}/{number_of_chunks}")
         elif response.status_code == 404:
             click.echo("Job not found.")
         else:
@@ -91,7 +93,6 @@ def status(job_id):
             click.echo(response.text)
     except requests.RequestException as e:
         click.echo(f"Failed to connect to server: {e}")
-
 
 
 

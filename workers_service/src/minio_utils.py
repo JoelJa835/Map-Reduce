@@ -17,9 +17,9 @@ minio_client = Minio(
 )
 
 
-def get_file(filename):
+def get_file(filename, bucket_name):
     try:
-        response = minio_client.get_object('map-reduce-input-files', filename)
+        response = minio_client.get_object(bucket_name, filename)
         file_content = response.read().decode('utf-8')  # Assuming the content is UTF-8 encoded JSON
         return file_content
     except Exception as e:

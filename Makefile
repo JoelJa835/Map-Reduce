@@ -19,10 +19,17 @@ MINIO_SERVICE_FILE := kubernetes/services/minio-service.yaml
 MANAGER_SERVICE_FILE := kubernetes/service/manager-service.yaml
 MANAGER_DEPLOYMENT_FILE := kubernetes/deployments/manager-service-statefull-set.yaml
 
+
+ROLES_CREATE_FILE := kubernetes/roles/job-creator-role.yaml
+ROLES_ROLESBIND := kubernetes/roles/job-creator-rolebinding.yaml
+
+
 # Targets
 .PHONY: deploy
 
 deploy:
+	kubectl create -f $(ROLES_CREATE_FILE)
+	kubectl create -f $(ROLES_ROLESBIND)
 	kubectl create -f $(AUTH_DEPLOYMENT_FILE)
 	kubectl create -f $(AUTH_SERVICE_FILE)
 	kubectl create -f $(CASSANDRA_SERVICE_FILE)
@@ -57,3 +64,5 @@ clean:
 	kubectl delete -f $(MINIO_SERVICE_FILE)
 	kubectl delete -f $(MANAGER_SERVICE_FILE)
 	kubectl delete -f $(MANAGER_DEPLOYMENT_FILE)
+	kubectl delete -f $(ROLES_CREATE_FILE)
+	kubectl delete -f $(ROLES_ROLESBIND)

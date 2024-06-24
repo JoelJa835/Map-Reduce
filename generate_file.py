@@ -67,9 +67,9 @@ def upload_file_to_minio(bucket_name, object_name, file_path):
         print(f"Error details: {e}")
 
 if __name__ == "__main__":
-    json_file_name = "large_input.json"
+    json_file_name = "large_input2.json"
     stats_file_name = "word_stats.json"
-    total_word_count = 10000000  # Total number of words to generate
+    total_word_count = 100000  # Total number of words to generate
     max_words_per_sentence = 15  # Maximum words per sentence
     bucket_name = 'map-reduce-input-files'
 

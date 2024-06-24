@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: ui-service-container
-        image: gsiatras13/map-reduce-ui-linux:manager
+        image: gsiatras13/map-reduce-ui-linux:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
