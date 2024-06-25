@@ -11,6 +11,8 @@ config.load_incluster_config()
 
 
 
+create_table_if_not_exists()
+
 def initiate_split_job(job_id, filename, num_chunks):
     '''
         Creates a split job
@@ -67,11 +69,11 @@ def initialize_map_phase(job_id):
     '''
         Initializes map phase
     '''
-
+    create_table_if_not_exists()
 
     # First retrieve all chucknames relative to the job_id from bucket
     chunk_names = get_chunk_names(job_id)
-
+    create_table_if_not_exists()
     # Get the last job sub status
 
 
@@ -91,7 +93,6 @@ def create_map_job(job_id, chunk_name):
 
 
     # Get the number of the chunk from chunk name
-    create_table_if_not_exists()
     chunk_number = get_chunk_number(chunk_name)
 
     try:
@@ -102,7 +103,7 @@ def create_map_job(job_id, chunk_name):
             "apiVersion": "batch/v1",
             "kind": "Job",
             "metadata": {
-                "name": f"map-{job_id}-{chunk_number}",  # Use a unique job name
+                "name": f"map-{job_id}-{chunk_number}",  # Unique job name
                 "namespace": "dena"
             },
             "spec": {
@@ -110,12 +111,13 @@ def create_map_job(job_id, chunk_name):
                     "spec": {
                         "containers": [{
                             "name": "worker",
-                            "image": "gsiatras13/map-reduce-worker:map",  # Replace with your worker image
+                            "image": "gsiatras13/map-reduce-worker:map2",
                             "imagePullPolicy": "Always",
                             "env": [
                                 {"name": "FUNCTION_NAME", "value": "MAP"},
-                                {"name": "JOB_ID", "value": job_id},
+                                {"name": "JOB_ID", "value": str(job_id)},
                                 {"name": "FILENAME", "value": chunk_name},
+                                {"name": "NUMBER", "value": str(chunk_number)},
                             ]
                         }],
                         "restartPolicy": "OnFailure"
@@ -154,3 +156,57 @@ def get_chunk_number(chunk_name):
         print(f"Error occurred while extracting chunk number: {e}")
         traceback.print_exc()
         return None
+
+
+
+def initialize_shuffle_sort_phase(job_id, reducers):
+    '''
+        Creates a shuffle_sort job
+    '''
+
+
+    # Get the number of the chunk from chunk name
+    create_table_if_not_exists()
+
+    try:
+        batch_v1 = client.BatchV1Api()
+
+        # Prepare payload for Kubernetes job
+        job_payload = {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "name": f"shuffle-sort-{job_id}",  # Use a unique job name
+                "namespace": "dena"
+            },
+            "spec": {
+                "template": {
+                    "spec": {
+                        "containers": [{
+                            "name": "worker",
+                            "image": "gsiatras13/map-reduce-worker:shuffle",  # Replace with your worker image
+                            "imagePullPolicy": "Always",
+                            "env": [
+                                {"name": "FUNCTION_NAME", "value": "SHUFFLESORT"},
+                                {"name": "JOB_ID", "value": job_id},
+                                {"name": "REDUCERS", "value": str(reducers)},
+                            ]
+                        }],
+                        "restartPolicy": "OnFailure"
+                    }
+                }
+            }
+        }
+
+        # Create the Kubernetes job
+        created_job = batch_v1.create_namespaced_job(namespace="dena", body=job_payload)
+        logging.info(f"Job {created_job.metadata.name} created successfully.")
+        return True
+
+    except ApiException as e:
+        logging.error(f"Exception when calling BatchV1Api->create_namespaced_job: {e.reason}")
+        return False
+
+    except Exception as e:
+        logging.error(f"Failed to initiate shuffle_sort job: {e}")
+        return False

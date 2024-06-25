@@ -10,6 +10,11 @@ import uuid
 contact_points = ['cassandra-0.cassandra.dena.svc.cluster.local']  # Replace with your Cassandra service DNS
 auth_provider = PlainTextAuthProvider(username='admin', password='admin')
 keyspace = 'admins'  # Replace with your keyspace name
+MAP_TABLE = 'map_table'
+SHUFFLE_TABLE = 'shuffle_table'
+REDUCE_TABLE = 'reduce_table'
+
+
 
 try:
     cluster = Cluster(contact_points=contact_points, auth_provider=auth_provider)
@@ -17,6 +22,10 @@ try:
 except Exception as e:
     logging.error(f"Failed to connect to Cassandra: {e}")
     raise
+
+
+
+
 
 def update_job_status(job_id, status):
     update_query = """
@@ -87,19 +96,47 @@ def get_job_status_and_chunk(job_id):
         logging.error(f"Failed to fetch job status and chunks from Cassandra: {e}")
         raise
 
-def create_table_if_not_exists():
-    keyspace_metadata = session.cluster.metadata.keyspaces.get('admins')
-    if keyspace_metadata is None:
-        raise ValueError("Keyspace does not exist")
 
-    if 'intermediate_data' not in keyspace_metadata.tables:
-        session.execute(f"""
-        CREATE TABLE intermediate_data (
+def create_table_if_not_exists():
+    session.execute(f"""
+        CREATE TABLE IF NOT EXISTS {MAP_TABLE} (
             job_id UUID,
+            batch_number TEXT,
             key TEXT,
-            value TEXT,
-            unique_id UUID,
-            PRIMARY KEY (job_id, key, unique_id)
+            value INT,
+            PRIMARY KEY (job_id, batch_number, key)
         );
         """)
+
+    session.execute(f"""
+        CREATE TABLE IF NOT EXISTS {SHUFFLE_TABLE} (
+            job_id UUID,
+            reducers_number TEXT,
+            key TEXT,
+            values list<int>,
+            PRIMARY KEY (job_id, key)
+        )
+        """)
+    
+    # session.execute(f"""
+    #     CREATE TABLE IF NOT EXISTS {REDUCE_TABLE} (
+    #         job_id UUID,
+    #         key TEXT,
+    #         values list<text>,
+    #         PRIMARY KEY (job_id, key)
+    #     )
+    #     """)
+
+
+
+def empty_entries(table_name, job_id):
+    delete_query = f"DELETE FROM {table_name} WHERE job_id = %s"
+    
+    try:
+        session.execute(delete_query, (uuid.UUID(str(job_id)),))
+    except Exception as e:
+        print(f"Failed to delete entries: {e}")
+    
+    
+
    

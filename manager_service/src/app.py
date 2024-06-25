@@ -1,15 +1,19 @@
 from flask import Flask, request, jsonify
 import logging
-from utils import initiate_split_job, initialize_map_phase
-from db_utils import update_job_status, update_job_chunks, get_job_status_and_chunk, update_job_sub_status
+from utils import initiate_split_job, initialize_map_phase, initialize_shuffle_sort_phase
+from db_utils import update_job_status, update_job_chunks, get_job_status_and_chunk, update_job_sub_status, empty_entries
 from minio_utils import delete_chunk
 
 
-NUM_CHUNKS = 10
-
 app = Flask(__name__)
 
+NUM_CHUNKS = 10
+REDUCERS = 4
 
+
+MAP_TABLE = 'map_table'
+SHUFFLE_TABLE = 'shuffle_table'
+REDUCE_TABLE = 'reduce_table'
 
 @app.route('/initialize_job', methods=['POST'])
 def initialize_job():
@@ -43,9 +47,6 @@ def split_complete():
 
     try:
         # Verify chunks exist in Minio
-        # Implement Minio verification logic here
-
-
         update_job_status(job_id, 'mapping_start')
         update_job_chunks(job_id, num_chunks)
         # Optionally update the job table with num_chunks and prefix
@@ -79,22 +80,43 @@ def map_complete():
             
         sub_status = sub_status + 1
         if sub_status == num_chunks:
-            # Initialize shuffle face
-            update_job_status(job_id, 'mapping_complete')
+            # Initialize shuffle_sort phase
+            update_job_status(job_id, 'shuffle_sort_start')
             update_job_sub_status(job_id, 0)
+            initialize_shuffle_sort_phase(job_id, REDUCERS)
+            
 
         else:
             # Raise
             update_job_sub_status(job_id, sub_status)
+
+            
         
         return jsonify({"message": "Job mapping complete", "job_id": job_id}), 200
 
 
     except Exception as e:
-        logging.error(f"Failed to complete mapping job: {e}")
-        return jsonify({"error": f"Failed to complete mapping job: {str(e)}"}), 500
+        return jsonify({"message": "Error during map complete/initialize short", "job_id": job_id}), 200
 
 
+
+
+@app.route('/shuffle_sort_complete', methods=['POST'])
+def shuffle_sort_complete():
+    data = request.json
+    job_id = data.get('job_id')
+    prefix = data.get('prefix')
+    
+    try:
+        # Empty map_table
+        empty_entries(MAP_TABLE, job_id)
+
+        # Change status
+        update_job_status(job_id, 'reduce_start')
+        return jsonify({"message": "Job shuffle-sort complete", "job_id": job_id}), 200
+
+    except Exception as e:
+        return jsonify({"message": "Error during shuffle sort complete/initialize reduce", "job_id": job_id}), 200
 
 
 

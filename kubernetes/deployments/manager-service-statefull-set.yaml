@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: manager-service
-        image: gsiatras13/map-reduce-manager-service:map 
+        image: gsiatras13/map-reduce-manager-service:shuffle
         imagePullPolicy: Always
         ports:
         - containerPort: 8081

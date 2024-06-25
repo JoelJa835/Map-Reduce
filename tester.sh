@@ -100,3 +100,25 @@ kubectl exec -it cassandra-0 -n dena -- /bin/bash
 cqlsh
 
 kubectl delete pods --field-selector=status.phase==Succeeded -n dena
+
+docker build -t map-reduce-worker .
+docker tag map-reduce-worker gsiatras13/map-reduce-worker:shuffle
+docker push gsiatras13/map-reduce-worker:shuffle
+
+
+#clean docker
+# Remove stopped containers
+docker container prune
+
+# Remove unused images
+docker image prune -a
+
+# Remove unused volumes
+docker volume prune
+
+
+docker build -t map-reduce-manager-service .
+
+docker tag map-reduce-manager-service gsiatras13/map-reduce-manager-service:shuffle
+
+docker push gsiatras13/map-reduce-manager-service:shuffle
