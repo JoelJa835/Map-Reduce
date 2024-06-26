@@ -67,13 +67,6 @@ curl -X POST http://localhost:8080/admin/create_user \
 
 
 
-# CLIENT
-kubectl port-forward service/ui-service 8080:8080 -n dena
-# login 
-python3 client.py login --username admin --password admin
-
-# add a user
-python3 client.py admin create-user user2
 
 
 kubectl create -f minio-storage-class.yaml
@@ -90,3 +83,54 @@ kubectl delete -f minio-storage-class.yaml
 
 #fix for kubernetes storages
 kubectl patch pv cassandra-data-pv-1 -p '{"metadata":{"finalizers":null}}'
+
+kubectl rollout restart deployment ui-deployment -n dena
+
+kubectl rollout restart statefulset manager-service -n dena
+
+kubectl exec -it cassandra-0 -n dena -- /bin/bash
+
+cqlsh
+
+kubectl delete pods --field-selector=status.phase==Succeeded -n dena
+
+docker build -t map-reduce-worker .
+docker tag map-reduce-worker gsiatras13/map-reduce-worker:latest
+docker push gsiatras13/map-reduce-worker:latest
+
+
+#clean docker
+# Remove stopped containers
+docker container prune
+
+# Remove unused images
+docker image prune -a
+
+# Remove unused volumes
+docker volume prune
+
+
+docker build -t map-reduce-manager-service .
+
+docker tag map-reduce-manager-service gsiatras13/map-reduce-manager-service:latest
+
+docker push gsiatras13/map-reduce-manager-service:latest
+
+
+#############################################
+# CLIENT
+kubectl port-forward service/ui-service 8080:8080 -n dena
+
+# login 
+python3 client.py login --username admin --password admin
+python3 client.py logout
+
+# add a user
+python3 client.py admin create-user user2
+
+python3 client.py jobs submit filename
+
+python3 client.py jobs status job_id
+
+
+

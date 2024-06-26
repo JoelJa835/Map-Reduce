@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: manager-service
+  namespace: dena
+spec:
+  replicas: 3
+  serviceName: "manager-service"
+  selector:
+    matchLabels:
+      app: manager-service
+  template:
+    metadata:
+      labels:
+        app: manager-service
+    spec:
+      containers:
+      - name: manager-service
+        image: gsiatras13/map-reduce-manager-service:latest
+        env:
+        - name: NUM_MAPPERS
+          value: "10"  # Initial default value
+        - name: NUM_REDUCERS
+          value: "2"  # Initial default value
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8081
+  volumeClaimTemplates:
+  - metadata:
+      name: manager-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 200Mi

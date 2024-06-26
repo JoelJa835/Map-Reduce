@@ -3,7 +3,7 @@ kind: Service
 metadata:
   labels:
     app: cassandra
-  name: cassandra-service
+  name: cassandra
   namespace: dena
 spec:
   clusterIP: None
