@@ -33,7 +33,7 @@ deploy:
 	kubectl create -f $(AUTH_DEPLOYMENT_FILE)
 	kubectl create -f $(AUTH_SERVICE_FILE)
 	kubectl create -f $(CASSANDRA_SERVICE_FILE)
-	# kubectl create -f $(CASSANDRA_STORAGE_FILE)
+	kubectl create -f $(CASSANDRA_STORAGE_FILE)
 	kubectl create -f $(CASSANDRA_DEPLOYMENT_FILE)
 	kubectl create -f $(MINIO_STORAGE_FILE)
 	kubectl create -f $(MINIO_PV_FILE)

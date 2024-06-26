@@ -9,6 +9,7 @@ MINIO_ACCESS_KEY = 'dena'
 MINIO_SECRET_KEY = 'dena1234'
 MINIO_BUCKET = 'chunk-bucket'
 
+
 minio_client = Minio(
     MINIO_ENDPOINT,
     access_key=MINIO_ACCESS_KEY,
@@ -29,21 +30,21 @@ def get_file(filename, bucket_name):
 
 
 
-def put_file(chunk_name, chunk):
+def put_file(file_name, file, bucket):
     try:
         # Check if bucket exists, create if not
-        if not minio_client.bucket_exists(MINIO_BUCKET):
-            minio_client.make_bucket(MINIO_BUCKET)
+        if not minio_client.bucket_exists(bucket):
+            minio_client.make_bucket(bucket)
 
         # Upload file to MinIO
-        bytes_data = chunk.encode('utf-8')
+        bytes_data = file.encode('utf-8')
 
-        minio_client.put_object(MINIO_BUCKET, chunk_name, io.BytesIO(bytes_data), len(chunk))
+        minio_client.put_object(bucket, file_name, io.BytesIO(bytes_data), len(file))
 
-        print(f"File '{chunk_name}' uploaded successfully to bucket '{MINIO_BUCKET}'.")
+        print(f"File '{file_name}' uploaded successfully to bucket 'bucket'.")
 
     except Exception as e:
-        print(f"An error occurred while uploading file '{chunk_name}' to bucket '{MINIO_BUCKET}':")
+        print(f"An error occurred while uploading file '{file_name}' to bucket '{bucket}':")
         print(traceback.format_exc())  # Print full traceback for debugging
         print(f"Error details: {e}")
 

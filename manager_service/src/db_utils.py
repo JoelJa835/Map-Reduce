@@ -114,18 +114,18 @@ def create_table_if_not_exists():
             reducers_number TEXT,
             key TEXT,
             values list<int>,
-            PRIMARY KEY (job_id, key)
+            PRIMARY KEY ((job_id, reducers_number), key)
         )
         """)
     
-    # session.execute(f"""
-    #     CREATE TABLE IF NOT EXISTS {REDUCE_TABLE} (
-    #         job_id UUID,
-    #         key TEXT,
-    #         values list<text>,
-    #         PRIMARY KEY (job_id, key)
-    #     )
-    #     """)
+    session.execute(f"""
+        CREATE TABLE IF NOT EXISTS {REDUCE_TABLE} (
+            job_id UUID,
+            key TEXT,
+            value INT,
+            PRIMARY KEY (job_id, key)
+        )
+        """)
 
 
 

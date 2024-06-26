@@ -1,6 +1,6 @@
 import logging
 import os
-from utils import split_file, map_file, shuffle_in_database
+from utils import split_file, map_file, shuffle_in_database, reduce_file, combining_reduced_data
 
 
 def split(job_id, filename, num_chunks):
@@ -26,6 +26,19 @@ def shuffle_and_short(job_id, reducers):
         logging.error(f"Failed to execute job: {e}")
         raise
 
+def reduce(job_id, reducer):
+    try:
+        reduce_file(job_id, reducer)
+    except Exception as e:
+        logging.error(f"Failed to execute job: {e}")
+        raise
+
+def combine(job_id):
+    try:
+        combining_reduced_data(job_id)
+    except Exception as e:
+        logging.error(f"Failed to execute job: {e}")
+        raise
 
 
 
@@ -38,6 +51,7 @@ def main():
         filename = os.getenv("FILENAME")
         num_chunks = int(os.getenv("NUM_CHUNKS"))
         split(job_id, filename, num_chunks)
+        pass
     elif function_name == "MAP":
         job_id = os.getenv("JOB_ID")
         filename = os.getenv("FILENAME")
@@ -45,12 +59,18 @@ def main():
         map(job_id, filename, number)
         pass
     elif function_name == "REDUCE":
-        # Implement logic for REDUCE function
+        job_id = os.getenv("JOB_ID")
+        reducer = os.getenv("REDUCER")
+        reduce(job_id, reducer)
         pass
     elif function_name == "SHUFFLESORT":
         job_id = os.getenv("JOB_ID")
         reducers = os.getenv("REDUCERS")
-        shuffle_and_short(job_id, int(reducers))
+        shuffle_and_short(job_id, int(reducers)) 
+        pass
+    elif function_name == "COMBINING":
+        job_id = os.getenv("JOB_ID")
+        combine(job_id)
         pass
     else:
         logging.error(f"Unknown function name: {function_name}")

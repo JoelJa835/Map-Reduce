@@ -6,6 +6,7 @@ MINIO_ENDPOINT = os.getenv("MINIO_SERVICE_URL", "minio-service:9000")
 MINIO_ACCESS_KEY = 'dena'
 MINIO_SECRET_KEY = 'dena1234'
 MINIO_BUCKET = 'chunk-bucket'
+MINIO_OUTPUT_BUCKET = 'map-reduce-final-results'
 
 minio_client = Minio(
     MINIO_ENDPOINT,
@@ -41,6 +42,20 @@ def delete_chunk(chunk_name):
     try:
         minio_client.remove_object(MINIO_BUCKET, chunk_name)
         print(f"Chunk {chunk_name} deleted successfully.")
+    except S3Error as e:
+        print(f"Error occurred while deleting chunk: {e}")
+        traceback.print_exc()
+
+
+
+
+def create_minio_bucket():
+    try:
+        found = minio_client.bucket_exists(MINIO_OUTPUT_BUCKET)
+        if not found:
+            minio_client.make_bucket(MINIO_OUTPUT_BUCKET)
+            print(f"Created bucket: {MINIO_OUTPUT_BUCKET}")
+        print('Bucket exists')
     except S3Error as e:
         print(f"Error occurred while deleting chunk: {e}")
         traceback.print_exc()

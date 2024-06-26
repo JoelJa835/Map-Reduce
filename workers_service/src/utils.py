@@ -4,7 +4,7 @@ from minio_utils import get_file, put_file
 import os
 import json
 import uuid
-from db_utils import insert_batch, insert_word, get_rows, insert_shuffled
+from db_utils import insert_batch, insert_word, get_rows, insert_shuffled, get_shuffled_data, insert_reduced_data, get_reduced_data
 from cassandra.cluster import Cluster
 from cassandra.query import BatchStatement, SimpleStatement
 from collections import defaultdict
@@ -14,11 +14,14 @@ from typing import List, Dict
 
 MANAGER_SERVICE_URL = os.getenv("MANAGER_SERVICE_URL", "http://manager-service.dena:8081")
 INPUT_BUCKET_NAME = "map-reduce-input-files"
-CHUCK_BUCKET_NAME = "chunk-bucket"
+CHUNCK_BUCKET_NAME = "chunk-bucket"
 CASSANDRA_KEYSPACE = "admins"
 MAP_TABLE = 'map_table'
 SHUFFLE_TABLE = 'shuffle_table'
 REDUCE_TABLE = 'reduce_table'
+MINIO_OUTPUT_BUCKET = 'map-reduce-final-results'
+
+
 
 def split_file(job_id, filename, num_chunks):
     try:
@@ -43,7 +46,7 @@ def split_file(job_id, filename, num_chunks):
         prefix = f'job-{job_id}'
         for i, chunk in enumerate(chunks):
             chunk_name = f'{prefix}/chunk-{i}'
-            put_file(chunk_name, json.dumps(chunk))  # Example: Convert chunk to JSON and store
+            put_file(chunk_name, json.dumps(chunk), CHUNCK_BUCKET_NAME)  # Example: Convert chunk to JSON and store
             chunk_file_names.append(chunk_name)
 
         # Notify manager of completion
@@ -67,7 +70,7 @@ def split_file(job_id, filename, num_chunks):
 def map_file(job_id, filename, number):
     try:
         # Retrieve the chunk file
-        input_file = get_file(filename, CHUCK_BUCKET_NAME)
+        input_file = get_file(filename, CHUNCK_BUCKET_NAME)
         data = json.loads(input_file)
         word_count = defaultdict(int)
 
@@ -150,6 +153,7 @@ def shuffle_in_database(job_id, reducers):
         response = requests.post(f"{MANAGER_SERVICE_URL}/shuffle_sort_complete", json={
             "job_id": str(job_id),  # Ensure job_id is sent as string
             "prefix": prefix, 
+            "reducers": reducers,
         })
 
         if response.status_code != 200:
@@ -162,6 +166,67 @@ def shuffle_in_database(job_id, reducers):
     except Exception as e:
         logging.error(f"Failed to suffle and sort file: {e}")
 
+
+def reduce_file(job_id, reducer_num):
+    try:
+
+        # Aggregate results from all reducers
+        final_results = defaultdict(int)
+
+    
+        shuffled_data = get_shuffled_data(job_id, reducer_num)
+        for key, values in shuffled_data:
+            final_results[key] += sum(values)  # Assuming reduction is summing values
+
+        # Store reduced results into the database
+        for key, value in final_results.items():
+            insert_reduced_data(job_id, key, value)
+        
+         # Notify manager of reduction completion
+        prefix = f'job-{job_id}'
+        response = requests.post(f"{MANAGER_SERVICE_URL}/reduce_complete", json={
+            "job_id": str(job_id),  # Ensure job_id is sent as string
+            "prefix": prefix,
+        })
+
+        if response.status_code != 200:
+            logging.error("Failed to notify manager of reduction completion")
+        else:
+            print('Manager notified of reduction completion.')
+
+    except Exception as e:
+        logging.error(f"Failed to reduce file: {e}")
+        
+
+def combining_reduced_data(job_id):   
+    try:
+        rows = get_reduced_data(job_id)   
+        # Process the data into the desired JSON format
+        data = {row.key: row.value for row in rows}
+
+        # Convert the dictionary to JSON string
+        json_data = json.dumps(data, indent=4)
+
+        # File name for MinIO
+        file_name = f'reduced_data_{job_id}.json'
+
+        # Upload JSON data directly to MinIO
+        put_file(file_name, json_data, MINIO_OUTPUT_BUCKET)
+
+        prefix = f'job-{job_id}'
+        response = requests.post(f"{MANAGER_SERVICE_URL}/combine_complete", json={
+            "job_id": str(job_id),  # Ensure job_id is sent as string
+            "prefix": prefix,
+            "file_name": file_name
+        })
+
+        if response.status_code != 200:
+            logging.error("Failed to notify manager of combine completion")
+        else:
+            print('Manager notified of combine completion.')
+
+    except Exception as e:
+        logging.error(f"Failed to combine file: {e}")
 
 
 def sanitize_word(word: str) -> str:

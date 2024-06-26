@@ -1,7 +1,7 @@
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 import logging
-from minio_utils import get_chunk_names
+from minio_utils import get_chunk_names, create_minio_bucket
 import traceback
 import re
 from db_utils import create_table_if_not_exists
@@ -29,11 +29,12 @@ def initiate_split_job(job_id, filename, num_chunks):
                 "namespace": "dena"
             },
             "spec": {
+                "ttlSecondsAfterFinished": 30,
                 "template": {
                     "spec": {
                         "containers": [{
                             "name": "worker",
-                            "image": "gsiatras13/map-reduce-worker:map",  # Replace with your worker image
+                            "image": "gsiatras13/map-reduce-worker:latest",  # Replace with your worker image
                             "imagePullPolicy": "Always",
                             "env": [
                                 {"name": "FUNCTION_NAME", "value": "SPLIT"},
@@ -69,15 +70,13 @@ def initialize_map_phase(job_id):
     '''
         Initializes map phase
     '''
-    create_table_if_not_exists()
 
+    create_table_if_not_exists()
     # First retrieve all chucknames relative to the job_id from bucket
     chunk_names = get_chunk_names(job_id)
-    create_table_if_not_exists()
+
     # Get the last job sub status
-
-
-
+    
     for chunk_name in chunk_names:
         create_map_job(job_id, chunk_name)
     
@@ -94,7 +93,6 @@ def create_map_job(job_id, chunk_name):
 
     # Get the number of the chunk from chunk name
     chunk_number = get_chunk_number(chunk_name)
-
     try:
         batch_v1 = client.BatchV1Api()
 
@@ -107,11 +105,12 @@ def create_map_job(job_id, chunk_name):
                 "namespace": "dena"
             },
             "spec": {
+                "ttlSecondsAfterFinished": 30,
                 "template": {
                     "spec": {
                         "containers": [{
                             "name": "worker",
-                            "image": "gsiatras13/map-reduce-worker:map2",
+                            "image": "gsiatras13/map-reduce-worker:latest",
                             "imagePullPolicy": "Always",
                             "env": [
                                 {"name": "FUNCTION_NAME", "value": "MAP"},
@@ -163,9 +162,6 @@ def initialize_shuffle_sort_phase(job_id, reducers):
     '''
         Creates a shuffle_sort job
     '''
-
-
-    # Get the number of the chunk from chunk name
     create_table_if_not_exists()
 
     try:
@@ -180,11 +176,12 @@ def initialize_shuffle_sort_phase(job_id, reducers):
                 "namespace": "dena"
             },
             "spec": {
+                "ttlSecondsAfterFinished": 30,
                 "template": {
                     "spec": {
                         "containers": [{
                             "name": "worker",
-                            "image": "gsiatras13/map-reduce-worker:shuffle",  # Replace with your worker image
+                            "image": "gsiatras13/map-reduce-worker:latest",  # Replace with your worker image
                             "imagePullPolicy": "Always",
                             "env": [
                                 {"name": "FUNCTION_NAME", "value": "SHUFFLESORT"},
@@ -209,4 +206,119 @@ def initialize_shuffle_sort_phase(job_id, reducers):
 
     except Exception as e:
         logging.error(f"Failed to initiate shuffle_sort job: {e}")
+        return False
+
+
+
+def create_reduce_job(job_id, reducer):
+    '''
+        Creates a reduce job
+    '''
+
+    try:
+        batch_v1 = client.BatchV1Api()
+
+        # Prepare payload for Kubernetes job
+        job_payload = {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "name": f"reduce-{job_id}-{reducer}",  # Use a unique job name
+                "namespace": "dena"
+            },
+            "spec": {
+                "ttlSecondsAfterFinished": 30,
+                "template": {
+                    "spec": {
+                        "containers": [{
+                            "name": "worker",
+                            "image": "gsiatras13/map-reduce-worker:latest",  # Replace with your worker image
+                            "imagePullPolicy": "Always",
+                            "env": [
+                                {"name": "FUNCTION_NAME", "value": "REDUCE"},
+                                {"name": "JOB_ID", "value": job_id},
+                                {"name": "REDUCER", "value": str(reducer)},
+                            ]
+                        }],
+                        "restartPolicy": "OnFailure"
+                    }
+                }
+            }
+        }
+
+        # Create the Kubernetes job
+        created_job = batch_v1.create_namespaced_job(namespace="dena", body=job_payload)
+        logging.info(f"Job {created_job.metadata.name} created successfully.")
+        return True
+
+    except ApiException as e:
+        logging.error(f"Exception when calling BatchV1Api->create_namespaced_job: {e.reason}")
+        return False
+
+    except Exception as e:
+        logging.error(f"Failed to initiate reducer job: {e}")
+        return False
+
+
+
+
+def initialize_reduce_phase(job_id, reducers):
+    '''
+        Initializes reduce phase
+    '''
+    create_table_if_not_exists()
+
+    for i in range(reducers):
+        create_reduce_job(job_id, i)
+    
+
+
+def initialize_combining_phase(job_id):
+    '''
+        Initializes combining phase
+    '''
+
+    create_minio_bucket()
+
+    try:
+        batch_v1 = client.BatchV1Api()
+
+        # Prepare payload for Kubernetes job
+        job_payload = {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "name": f"combine-{job_id}",  # Use a unique job name
+                "namespace": "dena"
+            },
+            "spec": {
+                "ttlSecondsAfterFinished": 30,
+                "template": {
+                    "spec": {
+                        "containers": [{
+                            "name": "worker",
+                            "image": "gsiatras13/map-reduce-worker:latest",  # Replace with your worker image
+                            "imagePullPolicy": "Always",
+                            "env": [
+                                {"name": "FUNCTION_NAME", "value": "COMBINING"},
+                                {"name": "JOB_ID", "value": job_id},
+                            ]
+                        }],
+                        "restartPolicy": "OnFailure"
+                    }
+                }
+            }
+        }
+
+        # Create the Kubernetes job
+        created_job = batch_v1.create_namespaced_job(namespace="dena", body=job_payload)
+        logging.info(f"Job {created_job.metadata.name} created successfully.")
+        return True
+
+    except ApiException as e:
+        logging.error(f"Exception when calling BatchV1Api->create_namespaced_job: {e.reason}")
+        return False
+
+    except Exception as e:
+        logging.error(f"Failed to initiate combining job: {e}")
         return False

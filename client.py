@@ -29,7 +29,6 @@ def delete_token():
         pass
 
 
-
 # Jobs command group
 @click.group()
 def jobs():
@@ -68,7 +67,6 @@ def submit(input_name):
         click.echo(response.text)
 
 
-
 @jobs.command()
 @click.argument('job_id')
 def status(job_id):
@@ -93,7 +91,6 @@ def status(job_id):
             click.echo(response.text)
     except requests.RequestException as e:
         click.echo(f"Failed to connect to server: {e}")
-
 
 
 # Admin command group
@@ -133,29 +130,13 @@ def create_user(username):
 
 
 
-
-
-
-# @admin.command()
-# @click.argument('username')
-# def delete_user(username):
-#     """Delete an existing user."""
-#     confirmation = click.confirm(f"Are you sure you want to delete user '{username}'?", default=False)
-#     if confirmation:
-#         click.echo(f"User '{username}' deleted successfully.")
-#     else:
-#         click.echo("Deletion canceled.")
-#     """
-#     Delete User logic
-#     """
-
-
 # Logout command
 @click.command()
 def logout():
     """Log out of the system."""
     delete_token()
     click.echo("Logged out successfully.")
+
 
 # Login command
 @click.command()

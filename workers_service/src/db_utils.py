@@ -45,7 +45,7 @@ def insert_batch(batch):
         logging.error(f"Failed to insert batch into Cassandra: {e}")
         raise
 
-def insert_word(job_id, batch_number, word, count):
+def insert_word(job_id, word, count, batch_number):
     try :
         session.execute(
                 f"""
@@ -56,12 +56,6 @@ def insert_word(job_id, batch_number, word, count):
     except Exception as e:
         logging.error(f"Failed to insert entry in Cassandra: {e}")
         raise
-
-
-def get_rows(job_id):
-    rows = session.execute(f"SELECT key, value FROM {MAP_TABLE} WHERE job_id = %s", (uuid.UUID(str(job_id)),))
-    return rows
-
 
 def insert_shuffled(job_id, reducers_number, key, values):
     try :
@@ -75,3 +69,29 @@ def insert_shuffled(job_id, reducers_number, key, values):
         logging.error(f"Failed to insert entry in Cassandra: {e}")
         raise
 
+def insert_reduced_data(job_id, key, value):
+    try :
+        session.execute(
+            f"""
+            INSERT INTO {REDUCE_TABLE} (job_id, key, value) VALUES (%s, %s, %s)
+            """,
+            (uuid.UUID(str(job_id)), key, value)
+        )
+    except Exception as e:
+        logging.error(f"Failed to insert entry in Cassandra: {e}")
+        raise
+
+
+def get_rows(job_id):
+    rows = session.execute(f"SELECT key, value FROM {MAP_TABLE} WHERE job_id = %s", (uuid.UUID(str(job_id)),))
+    return rows
+
+
+def get_shuffled_data(job_id, reducers_number):
+    rows = session.execute(f"SELECT key, values FROM {SHUFFLE_TABLE} WHERE job_id = %s AND reducers_number = %s", (uuid.UUID(str(job_id)), str(reducers_number)))
+    return rows
+
+
+def get_reduced_data(job_id):
+    rows = session.execute(f"SELECT key, value FROM {REDUCE_TABLE} WHERE job_id = %s", (uuid.UUID(str(job_id)),))
+    return rows

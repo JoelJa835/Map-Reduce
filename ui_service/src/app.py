@@ -104,6 +104,7 @@ def create_user():
         return jsonify({"error": "Username, password, and email are required"}), 400
 
 
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json

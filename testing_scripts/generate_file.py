@@ -1,15 +1,16 @@
 import json
 import random
-import string
 from collections import defaultdict
 from minio import Minio
 import traceback
+from io import BytesIO
 
 # List of common English words
 common_words = [
     "the", "quick", "brown", "fox", "jumps", "over", "lazy", "dog", "hello", "world",
     "python", "hadoop", "mapreduce", "data", "science", "machine", "learning", "artificial", "intelligence",
-    "big", "small", "large", "tiny", "huge", "run", "walk", "fly", "jump", "swim", "strike", "nike", "adidas", "white"
+    "big", "small", "large", "tiny", "huge", "run", "walk", "fly", "jump", "swim", "strike", "nike", "adidas", "white",
+    "green", "angry",
 ]
 
 # MinIO server details (replace with your actual MinIO server endpoint and credentials)
@@ -28,8 +29,8 @@ def generate_random_sentence(word_count, word_stats):
         word_stats[word] += 1
     return ' '.join(words)
 
-# Function to generate JSON file with specified total word count and maximum words per sentence
-def generate_json_file(file_name, word_count, max_words_per_sentence, word_stats):
+# Function to generate JSON data with specified total word count and maximum words per sentence
+def generate_json_data(word_count, max_words_per_sentence, word_stats):
     data = []
     total_words = 0
 
@@ -39,25 +40,24 @@ def generate_json_file(file_name, word_count, max_words_per_sentence, word_stats
         data.append({"text": sentence})
         total_words += words_in_sentence
 
-    with open(file_name, 'w') as f:
-        json.dump(data, f, indent=4)  # Dump the entire list to the JSON file
+    return json.dumps(data, indent=4), word_stats
 
-    return word_stats
+# Function to save word statistics to a JSON string and return it
+def generate_word_stats_json(word_stats):
+    stats_json = json.dumps(word_stats, indent=4)
+    print(stats_json)  # Print the JSON string
+    return stats_json
 
-# Function to save word statistics to a JSON file
-def save_word_stats(stats_file_name, word_stats):
-    with open(stats_file_name, 'w') as f:
-        json.dump(word_stats, f, indent=4)
-
-# Function to upload file to MinIO bucket
-def upload_file_to_minio(bucket_name, object_name, file_path):
+# Function to upload data to MinIO bucket without saving locally
+def upload_data_to_minio(bucket_name, object_name, data):
     try:
         # Check if bucket exists, create if not
         if not minio_client.bucket_exists(bucket_name):
             minio_client.make_bucket(bucket_name)
 
-        # Upload file to MinIO
-        minio_client.fput_object(bucket_name, object_name, file_path)
+        # Upload data to MinIO
+        data_stream = BytesIO(data.encode('utf-8'))
+        minio_client.put_object(bucket_name, object_name, data_stream, len(data.encode('utf-8')))
 
         print(f"File '{object_name}' uploaded successfully to bucket '{bucket_name}'.")
 
@@ -68,19 +68,18 @@ def upload_file_to_minio(bucket_name, object_name, file_path):
 
 if __name__ == "__main__":
     json_file_name = "large_input2.json"
-    stats_file_name = "word_stats.json"
-    total_word_count = 100000  # Total number of words to generate
-    max_words_per_sentence = 15  # Maximum words per sentence
+    stats_file_name = "word_stats2.json"
+    total_word_count = 1000000  # Total number of words to generate
+    max_words_per_sentence = 30  # Maximum words per sentence
     bucket_name = 'map-reduce-input-files'
 
     word_stats = defaultdict(int)
-    word_stats = generate_json_file(json_file_name, total_word_count, max_words_per_sentence, word_stats)
-    save_word_stats(stats_file_name, word_stats)
+    json_data, word_stats = generate_json_data(total_word_count, max_words_per_sentence, word_stats)
+    stats_data = generate_word_stats_json(word_stats)
 
-    # Upload files to MinIO bucket
-    upload_file_to_minio(bucket_name, json_file_name, json_file_name)
-    upload_file_to_minio(bucket_name, stats_file_name, stats_file_name)
+    # Upload JSON data to MinIO bucket
+    upload_data_to_minio(bucket_name, json_file_name, json_data)
+    upload_data_to_minio(bucket_name, stats_file_name, stats_data)
 
-    print(f"{json_file_name} generated with a total of {total_word_count} words.")
+    print(f"{json_file_name} generated with a total of {total_word_count} words and uploaded to MinIO.")
     print(f"{stats_file_name} generated with word counts and uploaded to MinIO bucket.")
-
