@@ -1,12 +1,12 @@
 # Map-Reduce
-Implementation of Map-Reduce on Kubernetes for word frequency.
+Implementation of Map-Reduce on Kubernetes for word frequency (Project 2024) for Principles of Distributed Systems Class / Technical University of Crete.     
 
 
-**Create the k8s deployment**        
-make deploy: sets up everything in kubernetes    
+**Create the k8s deployment**                
+make deploy: sets up everything in kubernetes            
     
-**Clean the k**
-make clean: clean everything in kubernetes
+**Clean the k8s deployment**         
+make clean: clean everything in kubernetes        
 
 **How to run**            
 client.py is our cli:
