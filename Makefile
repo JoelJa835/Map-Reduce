@@ -16,12 +16,14 @@ MINIO_PV_FILE := kubernetes/storage/minio-pv.yaml
 MINIO_DEPLOYMENT_FILE := kubernetes/storage/minio-deployment.yaml
 MINIO_SERVICE_FILE := kubernetes/services/minio-service.yaml
 
-MANAGER_SERVICE_FILE := kubernetes/service/manager-service.yaml
+MANAGER_SERVICE_FILE := kubernetes/services/manager-service.yaml
 MANAGER_DEPLOYMENT_FILE := kubernetes/deployments/manager-service-statefull-set.yaml
 
 
 ROLES_CREATE_FILE := kubernetes/roles/job-creator-role.yaml
 ROLES_ROLESBIND := kubernetes/roles/job-creator-rolebinding.yaml
+
+
 
 
 # Targets
@@ -33,7 +35,7 @@ deploy:
 	kubectl create -f $(AUTH_DEPLOYMENT_FILE)
 	kubectl create -f $(AUTH_SERVICE_FILE)
 	kubectl create -f $(CASSANDRA_SERVICE_FILE)
-	kubectl create -f $(CASSANDRA_STORAGE_FILE)
+	#kubectl create -f $(CASSANDRA_STORAGE_FILE)
 	kubectl create -f $(CASSANDRA_DEPLOYMENT_FILE)
 	kubectl create -f $(MINIO_STORAGE_FILE)
 	kubectl create -f $(MINIO_PV_FILE)
@@ -44,6 +46,7 @@ deploy:
 	kubectl create -f $(UI_SERVICE_FILE)
 	kubectl create -f $(MANAGER_SERVICE_FILE)
 	kubectl create -f $(MANAGER_DEPLOYMENT_FILE)
+
 
 
 
