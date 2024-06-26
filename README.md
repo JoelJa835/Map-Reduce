@@ -8,7 +8,7 @@ make deploy: sets up everything in kubernetes
 **Clean the k**
 make clean: clean everything in kubernetes
 
-**How to run**
+**How to run**            
 client.py is our cli:
 1. first run a portforward on kubernetes for the ui-service:        
 kubectl port-forward service/ui-service 8080:8080 -n dena        
@@ -24,7 +24,7 @@ python3 client.py jobs submit filename (filename must be already inserted in the
 python3 client.py jobs status job_id
 
 
-**testing_scripts:**
+**testing_scripts:**        
 Contains some scipts/files helpful for the developement/testing
 1. display_content.py:
 Displays the contents of a file in minio
