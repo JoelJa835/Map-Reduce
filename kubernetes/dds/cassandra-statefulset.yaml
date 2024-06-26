@@ -45,14 +45,13 @@ spec:
         volumeMounts:
         - name: cassandra-data
           mountPath: /var/lib/cassandra/data
-  volumeClaimTemplates:
-  - metadata:
-      name: cassandra-data
-      namespace: dena
-      annotations:  # comment line if you want to use a StorageClass
-        volume.beta.kubernetes.io/storage-class: ""   # comment line if you want to use a StorageClass or specify which StorageClass
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      resources:
-        requests:
-          storage: 1Gi
+        - name: cassandra-setup-script
+          mountPath: /cassandra-setup-script
+          subPath: setup-script.py
+      volumes:
+      - name: cassandra-data
+        persistentVolumeClaim:
+          claimName: cassandra-data
+      - name: cassandra-setup-script
+        configMap:
+          name: cassandra-setup-script
