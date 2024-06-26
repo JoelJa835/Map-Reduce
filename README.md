@@ -34,4 +34,6 @@ Generates input files with a given number of words and stores them in minio
 Test cassandara liveness
 4. test_minio:
 Check the contents of minio buckets
-   
+
+
+***Architecture***
