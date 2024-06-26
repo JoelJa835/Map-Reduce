@@ -1,4 +1,4 @@
-# Map-Reduce Implementation on Kubernetes for Word Frequency (Project 2024)
+# Map-Reduce Implementation on Kubernetes (Project 2024)
 *for Principles of Distributed Systems Class, Technical University of Crete*
 
 ## Overview
@@ -83,7 +83,7 @@ This directory includes useful scripts for development and testing:
   Flask API handling user commands.
 
 - **Auth Service:**
-  API managing user login and token assignment.
+  FastAPI managing user login and token assignment.
 
 - **Cassandra:**
   Distributed data storage for job metadata and temporary data.
