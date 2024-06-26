@@ -36,4 +36,22 @@ Test cassandara liveness
 Check the contents of minio buckets
 
 
-***Architecture***
+**Architecture**
+
+**Ui-service:**
+Flask api that handles commands from users.
+
+**Auth service:**
+Open api that handles login and assigns tokens for users and admins.
+
+**Cassandra:**
+Distributed Data Storage to store job metadata, as long as the temporary data created between the map-reduce phases.
+
+**Manager:**
+Flash api that coordinates the execution of map-reduce algorithm, creating workers and changing the metadata.
+
+**Workers:**
+Implemented as kubernetes jobs created by the manager service, they hanble all executions in the algorithm.
+
+**Minio:**
+Our persistent storage to store input, outfull files and chunks created by split phase.
