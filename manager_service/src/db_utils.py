@@ -140,3 +140,49 @@ def empty_entries(table_name, job_id):
     
 
    
+def get_job_status(job_id):
+    """
+    Retrieves job status for a given job_id.
+    """
+    select_query = """
+        SELECT status FROM jobs WHERE job_id = %s
+    """
+    try:
+        # Convert job_id to UUID type if it's not already
+        if not isinstance(job_id, uuid.UUID):
+            job_id = uuid.UUID(job_id)
+        
+        result = session.execute(select_query, (job_id,))
+        row = result.one()
+        
+        if row:
+            return row.status
+        else:
+            return None
+    except Exception as e:
+        logging.error(f"Failed to fetch job status from Cassandra: {e}")
+        raise
+
+
+def get_job_input_file(job_id):
+    """
+    Retrieves job status for a given job_id.
+    """
+    select_query = """
+        SELECT input_file FROM jobs WHERE job_id = %s
+    """
+    try:
+        # Convert job_id to UUID type if it's not already
+        if not isinstance(job_id, uuid.UUID):
+            job_id = uuid.UUID(job_id)
+        
+        result = session.execute(select_query, (job_id,))
+        row = result.one()
+        
+        if row:
+            return row.input_file
+        else:
+            return None
+    except Exception as e:
+        logging.error(f"Failed to fetch job filename from Cassandra: {e}")
+        raise

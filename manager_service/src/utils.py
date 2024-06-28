@@ -4,11 +4,19 @@ import logging
 from minio_utils import get_chunk_names, create_minio_bucket
 import traceback
 import re
-from db_utils import create_table_if_not_exists
+from db_utils import create_table_if_not_exists, update_job_status, update_job_chunks, get_job_status_and_chunk, update_job_sub_status, empty_entries, get_job_status, get_job_input_file
+
+import os
+import json
 
 # Assuming you are using in-cluster configuration, otherwise use config.load_kube_config()
 config.load_incluster_config()
 
+STATE_FILE_PATH = os.environ.get('STATE_FILE_PATH', '/data/job_state.json')
+
+MAP_TABLE = 'map_table'
+SHUFFLE_TABLE = 'shuffle_table'
+REDUCE_TABLE = 'reduce_table'
 
 
 create_table_if_not_exists()
@@ -51,6 +59,7 @@ def initiate_split_job(job_id, filename, num_chunks):
 
         # Create the Kubernetes job
         created_job = batch_v1.create_namespaced_job(namespace="dena", body=job_payload)
+        update_job_status(job_id, 'SPLITTING_PHASE')
         logging.info(f"Job {created_job.metadata.name} created successfully.")
         return True
 
@@ -66,7 +75,7 @@ def initiate_split_job(job_id, filename, num_chunks):
 # initiate_split_job("123456", "example.txt", 10)
 
 
-def initialize_map_phase(job_id):
+def initialize_map_phase(job_id, num_chunks):
     '''
         Initializes map phase
     '''
@@ -79,6 +88,9 @@ def initialize_map_phase(job_id):
     
     for chunk_name in chunk_names:
         create_map_job(job_id, chunk_name)
+    
+    update_job_status(job_id, 'MAPPING_PHASE')
+    update_job_chunks(job_id, num_chunks)
     
 
 
@@ -197,6 +209,10 @@ def initialize_shuffle_sort_phase(job_id, reducers):
 
         # Create the Kubernetes job
         created_job = batch_v1.create_namespaced_job(namespace="dena", body=job_payload)
+
+        update_job_status(job_id, 'SHUFFLE_AND_SORT_PHASE')
+        update_job_sub_status(job_id, 0)
+        update_job_chunks(job_id, 1)
         logging.info(f"Job {created_job.metadata.name} created successfully.")
         return True
 
@@ -270,6 +286,13 @@ def initialize_reduce_phase(job_id, reducers):
 
     for i in range(reducers):
         create_reduce_job(job_id, i)
+
+    empty_entries(MAP_TABLE, job_id)
+
+    # Change status
+    update_job_status(job_id, 'REDUCE_PHASE')
+
+    update_job_chunks(job_id, reducers)
     
 
 
@@ -312,6 +335,13 @@ def initialize_combining_phase(job_id):
 
         # Create the Kubernetes job
         created_job = batch_v1.create_namespaced_job(namespace="dena", body=job_payload)
+
+        update_job_status(job_id, 'COMBINING_PHASE')
+        update_job_sub_status(job_id, 0)
+        update_job_chunks(job_id, 1)
+
+        # Empty shuffle_table
+        empty_entries(SHUFFLE_TABLE, job_id)
         logging.info(f"Job {created_job.metadata.name} created successfully.")
         return True
 
@@ -322,3 +352,17 @@ def initialize_combining_phase(job_id):
     except Exception as e:
         logging.error(f"Failed to initiate combining job: {e}")
         return False
+    
+
+def load_job_id():
+    if os.path.exists(STATE_FILE_PATH):
+        with open(STATE_FILE_PATH, 'r') as f:
+            job_id = json.load(f)
+        return job_id
+    else:
+        return None
+
+
+def save_job_id(job_id):
+    with open(STATE_FILE_PATH, 'w') as f:
+        json.dump(job_id, f)

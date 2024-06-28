@@ -22,9 +22,14 @@ spec:
           value: "10"  # Initial default value
         - name: NUM_REDUCERS
           value: "2"  # Initial default value
+        - name: STATE_FILE_PATH
+          value: "/data/job_state.json"  # Path to the state file
         imagePullPolicy: Always
         ports:
         - containerPort: 8081
+        volumeMounts:
+        - name: manager-data
+          mountPath: /data
   volumeClaimTemplates:
   - metadata:
       name: manager-data
